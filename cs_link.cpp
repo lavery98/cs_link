@@ -16,10 +16,87 @@
 
 #include "module.h"
 
+class CommandCSLink : public Command
+{
+  void DoAdd(CommandSource &source, ChannelInfo *ci, const std::vector<Anope::string> &params)
+  {
+  }
+
+  void DoDel(CommandSource &source, ChannelInfo *ci, const std::vector<Anope::string> &params)
+  {
+  }
+
+  void DoList(CommandSource &source, ChannelInfo *ci, const std::vector<Anope::string> &params)
+  {
+  }
+
+public:
+  CommandCSLink(Module *creator) : Command(creator, "chanserv/link", 2, 5)
+  {
+    this->SetDesc("Modify the list of linked channels");
+    this->SetSyntax("\037channel\037 ADD \037channel\037 \037min-level\037 \037max-level\037");
+    this->SetSyntax("\037channel\037 DEL \037channel\037");
+    this->SetSyntax("\037channel\037 LIST");
+  }
+
+  void Execute(CommandSource &source, const std::vector<Anope::string> &params) anope_override
+  {
+    const Anope::string &cmd = params[1];
+    const Anope::string &channel = params.size() > 2 ? params[2] : "";
+    const Anope::string &min_level = params.size() > 3 ? params[3] : "";
+    const Anope::string &max_level = params.size() > 4 ? params[4] : "";
+
+    ChannelInfo *ci = ChannelInfo::Find(params[0]);
+    if(ci == NULL)
+    {
+      source.Reply(CHAN_X_NOT_REGISTERED, params[0].c_str());
+      return;
+    }
+
+    bool is_list = cmd.equals_ci("LIST");
+
+    bool has_access = false;
+    if(source.HasPriv("chanserv/link/modify"))
+      has_access = true;
+    else if(is_list && source.HasPriv("chanserv/link/list"))
+      has_access = true;
+    else if(is_list && source.AccessFor(ci).HasPriv("LINK_LIST"))
+      has_access = true;
+    else if(source.AccessFor(ci).HasPriv("LINK_CHANGE"))
+      has_access = true;
+
+    if(is_list ? 0 : (cmd.equals_ci("DEL") ? (channel.empty() || !min_level.empty() || !max_level.empty()) : max_level.empty()))
+      this->OnSyntaxError(source, cmd);
+    else if(!has_access)
+      source.Reply(ACCESS_DENIED);
+    else if(Anope::ReadOnly && !is_list)
+      source.Reply("Sorry, channel link list modification is temporarily disabled.");
+    else if(cmd.equals_ci("ADD"))
+      this->DoAdd(source, ci, params);
+    else if(cmd.equals_ci("DEL"))
+      this->DoDel(source, ci, params);
+    else if(cmd.equals_ci("LIST"))
+      this->DoList(source, ci, params);
+    else
+      this->OnSyntaxError(source, "");
+
+    return;
+  }
+
+  bool OnHelp(CommandSource &source, const Anope::string &subcommand) anope_override
+  {
+    this->SendSyntax(source);
+    return true;
+  }
+};
+
 class CSLink : public Module
 {
+  CommandCSLink commandcslink;
+
 public:
-  CSLink(const Anope::string &modname, const Anope::string &creator) : Module(modname, creator, THIRD)
+  CSLink(const Anope::string &modname, const Anope::string &creator) : Module(modname, creator, THIRD),
+        commandcslink(this)
   {
     this->SetAuthor("Ashley Lavery");
     this->SetVersion("1.0");
