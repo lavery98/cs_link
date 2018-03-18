@@ -22,7 +22,7 @@ public:
   CSLink(const Anope::string &modname, const Anope::string &creator) : Module(modname, creator, THIRD)
   {
     this->SetAuthor("Ashley Lavery");
-    this->setVersion("1.0");
+    this->SetVersion("1.0");
   }
 };
 
