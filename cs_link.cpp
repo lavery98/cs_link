@@ -25,15 +25,15 @@ public:
 
   LinkChannelEntry() : Serializable("LinkChannel") { }
 
-  LinkChannelEntry(ChannelInfo *c, const Anope::string &cLinkChan) : Serializable("LinkChannel")
+  LinkChannelEntry(ChannelInfo *c, const Anope::string &clinkchan) : Serializable("LinkChannel")
   {
     this->chan = c->name;
-    this->linkchan = cLinkChan;
+    this->linkchan = clinkchan;
   }
 
   ~LinkChannelEntry();
 
-  void Serialize(Serialize::Data &data) anope_override
+  void Serialize(Serialize::Data &data) const anope_override
   {
     data["chan"] << this->chan;
     data["linkchan"] << this->linkchan;
