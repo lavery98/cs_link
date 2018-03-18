@@ -112,6 +112,13 @@ class CommandCSLink : public Command
 
   void DoList(CommandSource &source, ChannelInfo *ci, const std::vector<Anope::string> &params)
   {
+    LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
+
+    if(!(*entries)->size())
+    {
+      source.Reply("%s linked channel list is empty.", ci->name.c_str());
+      return;
+    }
   }
 
 public:
