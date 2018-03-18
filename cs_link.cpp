@@ -24,6 +24,18 @@ public:
     this->SetAuthor("Ashley Lavery");
     this->SetVersion("1.0");
   }
+
+  void OnAccessAdd(ChannelInfo *ci, CommandSource &source, ChanAccess *access) anope_override
+  {
+  }
+
+  void OnAccessClear(ChannelInfo *ci, CommandSource &source) anope_override
+  {
+  }
+
+  void OnAccessDel(ChannelInfo *ci, CommandSource &source, ChanAccess *access) anope_override
+  {
+  }
 };
 
 MODULE_INIT(CSLink)
