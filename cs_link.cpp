@@ -16,6 +16,90 @@
 
 #include "module.h"
 
+/* Individual channel link entries */
+struct LinkChannelEntry : Serializable
+{
+public:
+  Anope::string chan;
+  Anope::string linkchan;
+
+  LinkChannelEntry() : Serializable("LinkChannel") { }
+
+  LinkChannelEntry(ChannelInfo *c, const Anope::string &cLinkChan) : Serializable("LinkChannel")
+  {
+    this->chan = c->name;
+    this->linkchan = cLinkChan;
+  }
+
+  ~LinkChannelEntry();
+
+  void Serialize(Serialize::Data &data) anope_override
+  {
+    data["chan"] << this->chan;
+    data["linkchan"] << this->linkchan;
+  }
+
+  static Serializable* Unserialize(Serializable *obj, Serialize::Data &data);
+};
+
+/* Per channel list of linked channels */
+struct LinkChannelList : Serialize::Checker<std::vector<LinkChannelEntry *> >
+{
+public:
+  LinkChannelList(Extensible *) : Serialize::Checker<std::vector<LinkChannelEntry *> >("LinkChannel") { }
+
+  ~LinkChannelList()
+  {
+    for(unsigned i = (*this)->size(); i > 0; i--)
+    {
+      delete (*this)->at(i - 1);
+    }
+  }
+};
+
+LinkChannelEntry::~LinkChannelEntry()
+{
+  ChannelInfo *ci = ChannelInfo::Find(this->chan);
+  if(!ci)
+    return;
+
+  LinkChannelList *entries = ci->GetExt<LinkChannelList>("linkchannellist");
+  if(!entries)
+    return;
+
+  std::vector<LinkChannelEntry *>::iterator it = std::find((*entries)->begin(), (*entries)->end(), this);
+  if(it != (*entries)->end())
+    (*entries)->erase(it);
+}
+
+Serializable* LinkChannelEntry::Unserialize(Serializable *obj, Serialize::Data &data)
+{
+  Anope::string schan, slinkchan;
+
+  data["chan"] >> schan;
+
+  ChannelInfo *ci = ChannelInfo::Find(schan);
+  if(!ci)
+    return NULL;
+
+  if(obj)
+  {
+    LinkChannelEntry *entry = anope_dynamic_static_cast<LinkChannelEntry *>(obj);
+    entry->chan = ci->name;
+    data["linkchan"] >> entry->linkchan;
+    return entry;
+  }
+
+  data["linkchan"] >> slinkchan;
+  /* TODO: check if linked chan exists */
+
+  LinkChannelEntry *entry = new LinkChannelEntry(ci, slinkchan);
+
+  LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
+  (*entries)->insert((*entries)->begin(), entry);
+  return entry;
+}
+
 class CommandCSLink : public Command
 {
   void DoAdd(CommandSource &source, ChannelInfo *ci, const std::vector<Anope::string> &params)
@@ -92,11 +176,12 @@ public:
 
 class CSLink : public Module
 {
+  ExtensibleItem<LinkChannelList> linkchannellist;
   CommandCSLink commandcslink;
 
 public:
   CSLink(const Anope::string &modname, const Anope::string &creator) : Module(modname, creator, THIRD),
-        commandcslink(this)
+        linkchannellist(this, "linkchannellist"), commandcslink(this)
   {
     this->SetAuthor("Ashley Lavery");
     this->SetVersion("1.0");
