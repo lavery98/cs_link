@@ -104,6 +104,28 @@ class CommandCSLink : public Command
 {
   void DoAdd(CommandSource &source, ChannelInfo *ci, const std::vector<Anope::string> &params)
   {
+    Anope::string channel = params[2];
+
+    ChannelInfo *lci = ChannelInfo::Find(channel);
+    if(lci == NULL)
+    {
+      source.Reply(CHAN_X_NOT_REGISTERED, channel.c_str());
+      return;
+    }
+
+    /* TODO: check permission and check if already linked */
+
+    LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
+
+    LinkChannelEntry *entry = new LinkChannelEntry(ci, lci->name);
+    (*entries)->insert((*entries)->begin(), entry);
+
+    LinkChannelList *lentries = lci->Require<LinkChannelList>("linkchannellist");
+
+    LinkChannelEntry *lentry = new LinkChannelEntry(lci, ci->name);
+    (*lentries)->insert((*lentries)->begin(), lentry);
+
+    /* TODO: sync access */
   }
 
   void DoDel(CommandSource &source, ChannelInfo *ci, const std::vector<Anope::string> &params)
