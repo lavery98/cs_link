@@ -205,11 +205,13 @@ public:
 
 class CSLink : public Module
 {
+  Serialize::Type linkchannel_type;
   ExtensibleItem<LinkChannelList> linkchannellist;
   CommandCSLink commandcslink;
 
 public:
   CSLink(const Anope::string &modname, const Anope::string &creator) : Module(modname, creator, THIRD),
+        linkchannel_type("LinkChannel", LinkChannelEntry::Unserialize),
         linkchannellist(this, "linkchannellist"), commandcslink(this)
   {
     this->SetAuthor("Ashley Lavery");
