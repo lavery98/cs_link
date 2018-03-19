@@ -130,13 +130,52 @@ class CommandCSLink : public Command
 
   void DoDel(CommandSource &source, ChannelInfo *ci, const std::vector<Anope::string> &params)
   {
+    Anope::string channel = params[2];
+
+    LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
+    if((*entries)->empty())
+      source.Reply("%s linked channel list is empty.", ci->name.c_str());
+    else
+    {
+      for(unsigned i = (*entries)->size(); i > 0; i--)
+      {
+        if(channel.equals_ci((*entries)->at(i - 1)->linkchan))
+        {
+          source.Reply("\002%s\002 deleted from %s linked channel list.", channel.c_str(), ci->name.c_str());
+
+          ChannelInfo *lci = ChannelInfo::Find(channel);
+          if(lci != NULL)
+          {
+            LinkChannelList *lentries = lci->Require<LinkChannelList>("linkchannellist");
+            if(!(*lentries)->empty())
+            {
+              for(unsigned j = (*lentries)->size(); j > 0; j--)
+              {
+                if(ci->name.equals_ci((*lentries)->at(j - 1)->linkchan))
+                {
+                  delete (*lentries)->at(j - 1);
+                  break;
+                }
+              }
+            }
+          }
+
+          delete (*entries)->at(i - 1);
+          return;
+        }
+      }
+
+      source.Reply("\002%s\002 not found on %s linked channel list.", channel.c_str(), ci->name.c_str());
+    }
+
+    return;
   }
 
   void DoList(CommandSource &source, ChannelInfo *ci, const std::vector<Anope::string> &params)
   {
     LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
 
-    if(!(*entries)->size())
+    if((*entries)->empty())
     {
       source.Reply("%s linked channel list is empty.", ci->name.c_str());
       return;
