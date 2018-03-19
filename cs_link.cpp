@@ -25,12 +25,6 @@ public:
 
   LinkChannelEntry() : Serializable("LinkChannel") { }
 
-  LinkChannelEntry(ChannelInfo *c, const Anope::string &clinkchan) : Serializable("LinkChannel")
-  {
-    this->chan = c->name;
-    this->linkchan = clinkchan;
-  }
-
   ~LinkChannelEntry();
 
   void Serialize(Serialize::Data &data) const anope_override
@@ -74,7 +68,7 @@ LinkChannelEntry::~LinkChannelEntry()
 
 Serializable* LinkChannelEntry::Unserialize(Serializable *obj, Serialize::Data &data)
 {
-  Anope::string schan, slinkchan;
+  Anope::string schan;
 
   data["chan"] >> schan;
 
@@ -82,21 +76,27 @@ Serializable* LinkChannelEntry::Unserialize(Serializable *obj, Serialize::Data &
   if(!ci)
     return NULL;
 
+  LinkChannelEntry *entry;
   if(obj)
+    entry = anope_dynamic_static_cast<LinkChannelEntry *>(obj);
+  else
+    entry = new LinkChannelEntry();
+
+  entry->chan = ci->name;
+  /* TODO: check if linked chan exists */
+  data["linkchan"] >> entry->linkchan;
+
+  if(!obj)
   {
-    LinkChannelEntry *entry = anope_dynamic_static_cast<LinkChannelEntry *>(obj);
-    entry->chan = ci->name;
-    data["linkchan"] >> entry->linkchan;
-    return entry;
+    LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
+
+    /* entries can come back NULL? as far as i'm aware this shouldn't happen  */
+    if(entries != NULL)
+    {
+      (*entries)->insert((*entries)->begin(), entry);
+    }
   }
 
-  data["linkchan"] >> slinkchan;
-  /* TODO: check if linked chan exists */
-
-  LinkChannelEntry *entry = new LinkChannelEntry(ci, slinkchan);
-
-  LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
-  (*entries)->insert((*entries)->begin(), entry);
   return entry;
 }
 
@@ -117,12 +117,16 @@ class CommandCSLink : public Command
 
     LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
 
-    LinkChannelEntry *entry = new LinkChannelEntry(ci, lci->name);
+    LinkChannelEntry *entry = new LinkChannelEntry();
+    entry->chan = ci->name;
+    entry->linkchan = lci->name;
     (*entries)->insert((*entries)->begin(), entry);
 
     LinkChannelList *lentries = lci->Require<LinkChannelList>("linkchannellist");
 
-    LinkChannelEntry *lentry = new LinkChannelEntry(lci, ci->name);
+    LinkChannelEntry *lentry = new LinkChannelEntry();
+    entry->chan = lci->name;
+    entry->linkchan = ci->name;
     (*lentries)->insert((*lentries)->begin(), lentry);
 
     /* TODO: sync access */
