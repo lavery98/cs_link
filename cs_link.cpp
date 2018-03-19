@@ -141,6 +141,27 @@ class CommandCSLink : public Command
       source.Reply("%s linked channel list is empty.", ci->name.c_str());
       return;
     }
+
+    ListFormatter list(source.GetAccount());
+    list.AddColumn("Number").AddColumn("Channel");
+    for(unsigned i = 0; i < (*entries)->size(); i++)
+    {
+      LinkChannelEntry *entry = (*entries)->at(i);
+
+      ListFormatter::ListEntry le;
+      le["Number"] = stringify(i + 1);
+      le["Channel"] = entry->linkchan;
+      list.AddEntry(le);
+    }
+
+    source.Reply("Linked channel list for %s:", ci->name.c_str());
+
+    std::vector<Anope::string> replies;
+    list.Process(replies);
+    for(unsigned i = 0; i < replies.size(); i++)
+      source.Reply(replies[i]);
+
+    source.Reply("End of linked channel list");
   }
 
 public:
