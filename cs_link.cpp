@@ -16,7 +16,8 @@
 
 #include "module.h"
 
-/* Individual channel link entries */
+/*
+// Individual channel link entries
 struct LinkChannelEntry : Serializable
 {
 public:
@@ -36,7 +37,7 @@ public:
   static Serializable* Unserialize(Serializable *obj, Serialize::Data &data);
 };
 
-/* Per channel list of linked channels */
+// Per channel list of linked channels
 struct LinkChannelList : Serialize::Checker<std::vector<LinkChannelEntry *> >
 {
 public:
@@ -83,28 +84,28 @@ Serializable* LinkChannelEntry::Unserialize(Serializable *obj, Serialize::Data &
     entry = new LinkChannelEntry();
 
   entry->chan = ci->name;
-  /* TODO: check if linked chan exists */
+  // TODO: check if linked chan exists
   data["linkchan"] >> entry->linkchan;
 
   if(!obj)
   {
     LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
 
-    /* entries can come back NULL? as far as i'm aware this shouldn't happen  */
-    if(entries != NULL)
-    {
-      (*entries)->insert((*entries)->begin(), entry);
-    }
-  }
+    // TODO: entries can come back NULL? as far as i'm aware this shouldn't happen
+    /*if(entries != NULL)
+    {*/
+      //(*entries)->insert((*entries)->begin(), entry);
+    //}
+  /*}
 
   return entry;
-}
+}*/
 
 class CommandCSLink : public Command
 {
   void DoAdd(CommandSource &source, ChannelInfo *ci, const std::vector<Anope::string> &params)
   {
-    Anope::string channel = params[2];
+    /*Anope::string channel = params[2];
 
     ChannelInfo *lci = ChannelInfo::Find(channel);
     if(lci == NULL)
@@ -113,7 +114,7 @@ class CommandCSLink : public Command
       return;
     }
 
-    /* TODO: check permission and check if already linked */
+    // TODO: check permission and check if already linked
 
     LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
 
@@ -129,12 +130,12 @@ class CommandCSLink : public Command
     entry->linkchan = ci->name;
     (*lentries)->insert((*lentries)->begin(), lentry);
 
-    /* TODO: sync access */
+    //TODO: sync access*/
   }
 
   void DoDel(CommandSource &source, ChannelInfo *ci, const std::vector<Anope::string> &params)
   {
-    Anope::string channel = params[2];
+    /*Anope::string channel = params[2];
 
     LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
     if((*entries)->empty())
@@ -172,12 +173,12 @@ class CommandCSLink : public Command
       source.Reply("\002%s\002 not found on %s linked channel list.", channel.c_str(), ci->name.c_str());
     }
 
-    return;
+    return;*/
   }
 
   void DoList(CommandSource &source, ChannelInfo *ci, const std::vector<Anope::string> &params)
   {
-    LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
+    /*LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
 
     if((*entries)->empty())
     {
@@ -204,7 +205,7 @@ class CommandCSLink : public Command
     for(unsigned i = 0; i < replies.size(); i++)
       source.Reply(replies[i]);
 
-    source.Reply("End of linked channel list");
+    source.Reply("End of linked channel list");*/
   }
 
 public:
