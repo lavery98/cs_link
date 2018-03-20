@@ -16,13 +16,9 @@
 
 #include "module.h"
 
-/*
-// Individual channel link entries
 struct LinkChannelEntry : Serializable
 {
-public:
-  Anope::string chan;
-  Anope::string linkchan;
+  Anope::string chan, linkchan;
 
   LinkChannelEntry() : Serializable("LinkChannel") { }
 
@@ -30,25 +26,21 @@ public:
 
   void Serialize(Serialize::Data &data) const anope_override
   {
-    data["chan"] << this->chan;
-    data["linkchan"] << this->linkchan;
+    data["chan"] << chan;
+    data["linkchan"] << linkchan;
   }
 
-  static Serializable* Unserialize(Serializable *obj, Serialize::Data &data);
+  static Serializable *Unserialize(Serializable *obj, Serialize::Data &data);
 };
 
-// Per channel list of linked channels
 struct LinkChannelList : Serialize::Checker<std::vector<LinkChannelEntry *> >
 {
-public:
   LinkChannelList(Extensible *) : Serialize::Checker<std::vector<LinkChannelEntry *> >("LinkChannel") { }
 
   ~LinkChannelList()
   {
     for(unsigned i = (*this)->size(); i > 0; i--)
-    {
       delete (*this)->at(i - 1);
-    }
   }
 };
 
@@ -67,45 +59,40 @@ LinkChannelEntry::~LinkChannelEntry()
     (*entries)->erase(it);
 }
 
-Serializable* LinkChannelEntry::Unserialize(Serializable *obj, Serialize::Data &data)
+Serializable *LinkChannelEntry::Unserialize(Serializable *obj, Serialize::Data &data)
 {
   Anope::string schan;
-
   data["chan"] >> schan;
 
   ChannelInfo *ci = ChannelInfo::Find(schan);
   if(!ci)
     return NULL;
 
+  LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
   LinkChannelEntry *entry;
+
   if(obj)
     entry = anope_dynamic_static_cast<LinkChannelEntry *>(obj);
   else
+  {
     entry = new LinkChannelEntry();
+    entry->chan = schan;
+  }
 
-  entry->chan = ci->name;
-  // TODO: check if linked chan exists
+  // TODO: check if linked channel exists
   data["linkchan"] >> entry->linkchan;
 
   if(!obj)
-  {
-    LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
-
-    // TODO: entries can come back NULL? as far as i'm aware this shouldn't happen
-    /*if(entries != NULL)
-    {*/
-      //(*entries)->insert((*entries)->begin(), entry);
-    //}
-  /*}
+    (*entries)->push_back(entry);
 
   return entry;
-}*/
+}
 
 class CommandCSLink : public Command
 {
   void DoAdd(CommandSource &source, ChannelInfo *ci, const std::vector<Anope::string> &params)
   {
-    /*Anope::string channel = params[2];
+    Anope::string channel = params[2];
 
     ChannelInfo *lci = ChannelInfo::Find(channel);
     if(lci == NULL)
@@ -126,16 +113,16 @@ class CommandCSLink : public Command
     LinkChannelList *lentries = lci->Require<LinkChannelList>("linkchannellist");
 
     LinkChannelEntry *lentry = new LinkChannelEntry();
-    entry->chan = lci->name;
-    entry->linkchan = ci->name;
+    lentry->chan = lci->name;
+    lentry->linkchan = ci->name;
     (*lentries)->insert((*lentries)->begin(), lentry);
 
-    //TODO: sync access*/
+    //TODO: sync access
   }
 
   void DoDel(CommandSource &source, ChannelInfo *ci, const std::vector<Anope::string> &params)
   {
-    /*Anope::string channel = params[2];
+    Anope::string channel = params[2];
 
     LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
     if((*entries)->empty())
@@ -173,12 +160,12 @@ class CommandCSLink : public Command
       source.Reply("\002%s\002 not found on %s linked channel list.", channel.c_str(), ci->name.c_str());
     }
 
-    return;*/
+    return;
   }
 
   void DoList(CommandSource &source, ChannelInfo *ci, const std::vector<Anope::string> &params)
   {
-    /*LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
+    LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
 
     if((*entries)->empty())
     {
@@ -205,7 +192,19 @@ class CommandCSLink : public Command
     for(unsigned i = 0; i < replies.size(); i++)
       source.Reply(replies[i]);
 
-    source.Reply("End of linked channel list");*/
+    source.Reply("End of linked channel list");
+  }
+
+  void DoClear(CommandSource &source, ChannelInfo *ci, const std::vector<Anope::string> &params)
+  {
+    if(!source.IsFounder(ci) && !source.HasPriv("chanserv/link/modify"))
+      source.Reply(ACCESS_DENIED);
+    else
+    {
+      ci->Shrink<LinkChannelList>("linkchannellist");
+
+      source.Reply("Channel %s linked channel list has been cleared.", ci->name.c_str());
+    }
   }
 
 public:
@@ -215,6 +214,7 @@ public:
     this->SetSyntax("\037channel\037 ADD \037channel\037 \037min-level\037 \037max-level\037");
     this->SetSyntax("\037channel\037 DEL \037channel\037");
     this->SetSyntax("\037channel\037 LIST");
+    this->SetSyntax("\037channel\037 CLEAR");
   }
 
   void Execute(CommandSource &source, const std::vector<Anope::string> &params) anope_override
@@ -232,6 +232,7 @@ public:
     }
 
     bool is_list = cmd.equals_ci("LIST");
+    bool is_clear = cmd.equals_ci("CLEAR");
 
     bool has_access = false;
     if(source.HasPriv("chanserv/link/modify"))
@@ -243,7 +244,7 @@ public:
     else if(source.AccessFor(ci).HasPriv("LINK_CHANGE"))
       has_access = true;
 
-    if(is_list ? 0 : (cmd.equals_ci("DEL") ? (channel.empty() || !min_level.empty() || !max_level.empty()) : max_level.empty()))
+    if(is_list || is_clear ? 0 : (cmd.equals_ci("DEL") ? (channel.empty() || !min_level.empty() || !max_level.empty()) : max_level.empty()))
       this->OnSyntaxError(source, cmd);
     else if(!has_access)
       source.Reply(ACCESS_DENIED);
@@ -255,6 +256,8 @@ public:
       this->DoDel(source, ci, params);
     else if(cmd.equals_ci("LIST"))
       this->DoList(source, ci, params);
+    else if(cmd.equals_ci("CLEAR"))
+      this->DoClear(source, ci, params);
     else
       this->OnSyntaxError(source, "");
 
@@ -270,14 +273,15 @@ public:
 
 class CSLink : public Module
 {
-  Serialize::Type linkchannel_type;
   ExtensibleItem<LinkChannelList> linkchannellist;
+  Serialize::Type linkchannel_type;
   CommandCSLink commandcslink;
 
 public:
   CSLink(const Anope::string &modname, const Anope::string &creator) : Module(modname, creator, THIRD),
+        linkchannellist(this, "linkchannellist"),
         linkchannel_type("LinkChannel", LinkChannelEntry::Unserialize),
-        linkchannellist(this, "linkchannellist"), commandcslink(this)
+        commandcslink(this)
   {
     this->SetAuthor("Ashley Lavery");
     this->SetVersion("1.0");
