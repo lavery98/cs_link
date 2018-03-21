@@ -103,7 +103,7 @@ class CommandCSLink : public Command
 
     // TODO: check if already linked
     // check permissions for other channel
-    if(!source.HasPriv("chanserv/administration") || !source.AccessFor(ci).HasPriv("FOUNDER"))
+    if(!source.HasPriv("chanserv/administration") || !source.AccessFor(lci).HasPriv("FOUNDER"))
     {
       source.Reply(ACCESS_DENIED);
       return;
