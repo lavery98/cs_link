@@ -337,6 +337,24 @@ public:
 
     if(!(*entries)->empty())
     {
+      for(unsigned i = 0; i < (*entries)->size(); i++)
+      {
+        LinkChannelEntry *entry = (*entries)->at(i);
+
+        ChannelInfo *lci = ChannelInfo::Find(entry->linkchan);
+        if(!lci)
+          continue;
+
+        // Don't clear access if it is already empty
+        if(lci->GetAccessCount() == 0)
+          return;
+
+        lci->ClearAccess();
+
+        FOREACH_MOD(OnAccessClear, (lci, source));
+
+        // TODO: log
+      }
     }
   }
 
