@@ -101,7 +101,13 @@ class CommandCSLink : public Command
       return;
     }
 
-    // TODO: check permission and check if already linked
+    // TODO: check if already linked
+    // check permissions for other channel
+    if(!source.HasPriv("chanserv/administration") || !source.AccessFor(ci).HasPriv("FOUNDER"))
+    {
+      source.Reply(ACCESS_DENIED);
+      return;
+    }
 
     LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
 
@@ -197,7 +203,7 @@ class CommandCSLink : public Command
 
   void DoClear(CommandSource &source, ChannelInfo *ci, const std::vector<Anope::string> &params)
   {
-    if(!source.IsFounder(ci) && !source.HasPriv("chanserv/link/modify"))
+    if(!source.IsFounder(ci) && !source.HasPriv("chanserv/administration"))
       source.Reply(ACCESS_DENIED);
     else
     {
@@ -237,11 +243,11 @@ public:
     bool has_access = false;
     if(source.HasPriv("chanserv/link/modify"))
       has_access = true;
-    else if(is_list && source.HasPriv("chanserv/link/list"))
+    else if(is_list && source.HasPriv("chanserv/administration"))
       has_access = true;
-    else if(is_list && source.AccessFor(ci).HasPriv("LINK_LIST"))
+    else if(is_list && source.AccessFor(ci).HasPriv("ACCESS_LIST"))
       has_access = true;
-    else if(source.AccessFor(ci).HasPriv("LINK_CHANGE"))
+    else if(source.AccessFor(ci).HasPriv("FOUNDER"))
       has_access = true;
 
     if(is_list || is_clear ? 0 : (cmd.equals_ci("DEL") ? (channel.empty() || !min_level.empty() || !max_level.empty()) : max_level.empty()))
@@ -327,6 +333,11 @@ public:
 
   void OnAccessClear(ChannelInfo *ci, CommandSource &source) anope_override
   {
+    LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
+
+    if(!(*entries)->empty())
+    {
+    }
   }
 
   void OnAccessDel(ChannelInfo *ci, CommandSource &source, ChanAccess *access) anope_override
