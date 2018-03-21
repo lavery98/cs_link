@@ -346,7 +346,7 @@ public:
           continue;
 
         // Don't clear access if it is already empty
-        if(lci->GetAccessCount() == 0)
+        if(!lci->GetAccessCount())
           return;
 
         lci->ClearAccess();
@@ -360,6 +360,32 @@ public:
 
   void OnAccessDel(ChannelInfo *ci, CommandSource &source, ChanAccess *access) anope_override
   {
+    LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
+
+    if(!(*entries)->empty())
+    {
+      for(unsigned i = 0; i < (*entries)->size(); i++)
+      {
+        LinkChannelEntry *entry = (*entries)->at(i);
+
+        ChannelInfo *lci = ChannelInfo::Find(entry->linkchan);
+        if(!lci)
+          continue;
+
+        // TODO: remove access
+        for(unsigned j = lci->GetAccessCount(); j > 0; j--)
+        {
+          ChanAccess *laccess = lci->GetAccess(j - 1);
+          if(laccess->Mask().equals_ci(access->Mask()))
+          {
+            lci->EraseAccess(j - 1);
+            // TODO: prevent an infinite loop
+            //FOREACH_MOD(OnAccessDel, (lci, source, access));
+            delete laccess;
+          }
+        }
+      }
+    }
   }
 };
 
