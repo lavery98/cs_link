@@ -289,6 +289,40 @@ public:
 
   void OnAccessAdd(ChannelInfo *ci, CommandSource &source, ChanAccess *access) anope_override
   {
+    LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
+
+    if(!(*entries)->empty())
+    {
+      for(unsigned i = 0; i < (*entries)->size(); i++)
+      {
+        LinkChannelEntry *entry = (*entries)->at(i);
+
+        ChannelInfo *lci = ChannelInfo::Find(entry->linkchan);
+        // TODO: remove stale record
+        if(!lci)
+          continue;
+
+        // Delete old access
+        for(unsigned j = lci->GetAccessCount(); j > 0; j--)
+        {
+          const ChanAccess *laccess = lci->GetAccess(j - 1);
+          // Don't keep adding an access that already exists
+          if(laccess == access)
+            return;
+
+          if(laccess->GetAccount() == access->GetAccount() || laccess->Mask().equals_ci(access->Mask()))
+          {
+            delete lci->EraseAccess(j - 1);
+            break;
+          }
+        }
+
+        // Add access to channel
+        lci->AddAccess(access);
+
+        FOREACH_MOD(OnAccessAdd, (lci, source, access));
+      }
+    }
   }
 
   void OnAccessClear(ChannelInfo *ci, CommandSource &source) anope_override
