@@ -372,16 +372,15 @@ public:
         if(!lci)
           continue;
 
-        // TODO: remove access
         for(unsigned j = lci->GetAccessCount(); j > 0; j--)
         {
           ChanAccess *laccess = lci->GetAccess(j - 1);
           if(laccess->Mask().equals_ci(access->Mask()))
           {
             lci->EraseAccess(j - 1);
-            // TODO: prevent an infinite loop
-            //FOREACH_MOD(OnAccessDel, (lci, source, access));
+            FOREACH_MOD(OnAccessDel, (lci, source, access));
             delete laccess;
+            return;
           }
         }
       }
