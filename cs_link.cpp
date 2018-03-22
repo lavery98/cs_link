@@ -327,6 +327,8 @@ public:
         lci->AddAccess(access);
 
         FOREACH_MOD(OnAccessAdd, (lci, source, access));
+
+        Log(LOG_DEBUG) << source.GetNick() << " used linked access on " << lci->name << " to add " << access->Mask() << " with level " << access->AccessSerialize();
       }
     }
   }
@@ -353,7 +355,7 @@ public:
 
         FOREACH_MOD(OnAccessClear, (lci, source));
 
-        // TODO: log
+        Log(LOG_DEBUG) << source.GetNick() << " used linked access on " << lci->name << "to clear the access list";
       }
     }
   }
@@ -377,8 +379,10 @@ public:
           ChanAccess *laccess = lci->GetAccess(j - 1);
           if(laccess->Mask().equals_ci(access->Mask()))
           {
+            Log(LOG_DEBUG) << source.GetNick() << " used linked access on " << lci->name << " to delete " << access->Mask();
+
             lci->EraseAccess(j - 1);
-            FOREACH_MOD(OnAccessDel, (lci, source, access));
+            FOREACH_MOD(OnAccessDel, (lci, source, laccess));
             delete laccess;
             return;
           }
