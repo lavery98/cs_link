@@ -141,6 +141,7 @@ class CommandCSLink : public Command
 
   void DoDel(CommandSource &source, ChannelInfo *ci, const std::vector<Anope::string> &params)
   {
+    // TODO: delete using entry numbers
     Anope::string channel = params[2];
 
     LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
@@ -290,7 +291,24 @@ public:
     source.Reply("Maintains the \002linked channel list\002 for a channel.  The linked\n"
                  "channel list specifies which channels the access list is linked to.  \n"
                  "When an access level is changed on a linked channel the access\n"
-                 "level is also changed on this channel.");
+                 "level is also changed on this channel if the access level is within\n"
+                 "the minimum and maximum levels specified.");
+    source.Reply(" ");
+    source.Reply("The \002LINK ADD\002 command adds the given channel to the linked\n"
+                 "channel list with the given minimum and maximum access levels.\n");
+    source.Reply(" ");
+    source.Reply("The \002LINK DEL\002 command removes the given channel from the\n"
+                 "linked channel list.  If a list of entry numbers is given, those\n"
+                 "entries are deleted.  (See the example for LIST below.)");
+    source.Reply(" ");
+    source.Reply("The \002LINK LIST\002 command displays the linked channel list. If a\n"
+                 "list of entry numbers is given, only those entries are shown; for\n"
+                 "example:\n"
+                 "  \002LINK #channel LIST 2-5,7-9\002\n"
+                 "      Lists linked channel entries numbered 2 through 5 and\n"
+                 "      7 though 9.\n"
+                 "The \002LINK CLEAR\002 command clears all entries on the linked\n"
+                 "channel list.");
     return true;
   }
 };
