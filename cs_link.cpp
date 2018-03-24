@@ -79,8 +79,10 @@ Serializable *LinkChannelEntry::Unserialize(Serializable *obj, Serialize::Data &
     entry->chan = schan;
   }
 
-  // TODO: check if linked channel exists
   data["linkchan"] >> entry->linkchan;
+  ChannelInfo *lci = ChannelInfo::Find(entry->linkchan);
+  if(!lci)
+    return NULL;
 
   if(!obj)
     (*entries)->push_back(entry);
