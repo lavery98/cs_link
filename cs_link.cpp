@@ -247,7 +247,7 @@ class CommandCSLink : public Command
 
   void DoList(CommandSource &source, ChannelInfo *ci, const std::vector<Anope::string> &params)
   {
-    // TODO: list by entries
+    const Anope::string &channel = params.size() > 2 ? params[2] : "";
 
     LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
 
@@ -259,24 +259,63 @@ class CommandCSLink : public Command
 
     ListFormatter list(source.GetAccount());
     list.AddColumn("Number").AddColumn("Channel");
-    for(unsigned i = 0; i < (*entries)->size(); i++)
-    {
-      LinkChannelEntry *entry = (*entries)->at(i);
 
-      ListFormatter::ListEntry le;
-      le["Number"] = stringify(i + 1);
-      le["Channel"] = entry->linkchan;
-      list.AddEntry(le);
+    if(!channel.empty() && channel.find_first_not_of("1234567890,-") == Anope::string::npos)
+    {
+      class LinkListCallback : public NumberList
+      {
+        ListFormatter &list;
+        ChannelInfo *ci;
+        LinkChannelList *entries;
+
+      public:
+        LinkListCallback(ListFormatter &_list, ChannelInfo *_ci, LinkChannelList *_entries, const Anope::string &numlist) : NumberList(numlist, false), list(_list), ci(_ci), entries(_entries)
+        {
+        }
+
+        void HandleNumber(unsigned number) anope_override
+        {
+          if(!number || number > (*entries)->size())
+            return;
+
+          LinkChannelEntry *entry = (*entries)->at(number - 1);
+
+          ListFormatter::ListEntry le;
+          le["Number"] = stringify(number);
+          le["Channel"] = entry->linkchan;
+          this->list.AddEntry(le);
+        }
+      }
+      nl_list(list, ci, entries, channel);
+      nl_list.Process();
+    }
+    else
+    {
+      for(unsigned i = 0; i < (*entries)->size(); i++)
+      {
+        LinkChannelEntry *entry = (*entries)->at(i);
+
+        ListFormatter::ListEntry le;
+        le["Number"] = stringify(i + 1);
+        le["Channel"] = entry->linkchan;
+        list.AddEntry(le);
+      }
     }
 
-    source.Reply("Linked channel list for %s:", ci->name.c_str());
+    if(list.IsEmpty())
+      source.Reply("No matching entries on %s linked channel list.", ci->name.c_str());
+    else
+    {
+      std::vector<Anope::string> replies;
+      list.Process(replies);
 
-    std::vector<Anope::string> replies;
-    list.Process(replies);
-    for(unsigned i = 0; i < replies.size(); i++)
-      source.Reply(replies[i]);
+      source.Reply("Linked channel list for %s:", ci->name.c_str());
 
-    source.Reply("End of linked channel list");
+      for(unsigned i = 0; i < replies.size(); i++)
+        source.Reply(replies[i]);
+
+      source.Reply("End of linked channel list");
+    }
   }
 
   void DoClear(CommandSource &source, ChannelInfo *ci, const std::vector<Anope::string> &params)
