@@ -390,6 +390,39 @@ public:
       }
     }
   }
+
+  void OnDelChan(ChannelInfo *ci) anope_override
+  {
+    LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
+
+    if(!(*entries)->empty())
+    {
+      for(unsigned i = 0; i < (*entries)->size(); i++)
+      {
+        LinkChannelEntry *entry = (*entries)->at(i);
+
+        ChannelInfo *lci = ChannelInfo::Find(entry->linkchan);
+        if(!lci)
+          continue;
+
+        LinkChannelList *lentries = lci->Require<LinkChannelList>("linkchannellist");
+
+        if(!(*lentries)->empty())
+        {
+          for(unsigned j = (*lentries)->size(); j > 0; j--)
+          {
+            LinkChannelEntry *lentry = (*lentries)->at(j - 1);
+
+            if(lentry->linkchan.equals_ci(entry->chan))
+            {
+              delete (*lentries)->at(j - 1);
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
 };
 
 MODULE_INIT(CSLink)
