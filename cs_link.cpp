@@ -101,7 +101,6 @@ class CommandCSLink : public Command
       return;
     }
 
-    // TODO: check if already linked
     // check permissions for other channel
     if(!source.HasPriv("chanserv/administration") || !source.AccessFor(lci).HasPriv("FOUNDER"))
     {
@@ -110,6 +109,18 @@ class CommandCSLink : public Command
     }
 
     LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
+
+    // check if the channel is already linked
+    for(unsigned i = 0; i < (*entries)->size(); i++)
+    {
+      LinkChannelEntry *entry = (*entries)->at(i);
+
+      if(lci->name.equals_ci(entry->linkchan))
+      {
+        source.Reply("Channel %s is already linked to %s.", lci->name.c_str(), ci->name.c_str());
+        return;
+      }
+    }
 
     LinkChannelEntry *entry = new LinkChannelEntry();
     entry->chan = ci->name;
@@ -273,6 +284,11 @@ public:
   bool OnHelp(CommandSource &source, const Anope::string &subcommand) anope_override
   {
     this->SendSyntax(source);
+    source.Reply(" ");
+    source.Reply("Maintains the \002linked channel list\002 for a channel.  The linked\n"
+                 "channel list specifies which channels the access list is linked to.  \n"
+                 "When an access level is changed on a linked channel the access\n"
+                 "level is also changed on this channel.");
     return true;
   }
 };
