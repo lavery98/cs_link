@@ -299,14 +299,17 @@ public:
 
     if(!(*entries)->empty())
     {
-      for(unsigned i = 0; i < (*entries)->size(); i++)
+      for(unsigned i = (*entries)->size(); i > 0; i--)
       {
-        LinkChannelEntry *entry = (*entries)->at(i);
+        LinkChannelEntry *entry = (*entries)->at(i - 1);
 
         ChannelInfo *lci = ChannelInfo::Find(entry->linkchan);
-        // TODO: remove stale record
         if(!lci)
+        {
+          // Delete stale link
+          delete (*entries)->at(i - 1);
           continue;
+        }
 
         // Delete old access
         for(unsigned j = lci->GetAccessCount(); j > 0; j--)
@@ -339,13 +342,17 @@ public:
 
     if(!(*entries)->empty())
     {
-      for(unsigned i = 0; i < (*entries)->size(); i++)
+      for(unsigned i = (*entries)->size(); i > 0; i--)
       {
-        LinkChannelEntry *entry = (*entries)->at(i);
+        LinkChannelEntry *entry = (*entries)->at(i - 1);
 
         ChannelInfo *lci = ChannelInfo::Find(entry->linkchan);
         if(!lci)
+        {
+          // Delete stale link
+          delete (*entries)->at(i - 1);
           continue;
+        }
 
         // Don't clear access if it is already empty
         if(!lci->GetAccessCount())
@@ -366,13 +373,17 @@ public:
 
     if(!(*entries)->empty())
     {
-      for(unsigned i = 0; i < (*entries)->size(); i++)
+      for(unsigned i = (*entries)->size(); i > 0; i--)
       {
-        LinkChannelEntry *entry = (*entries)->at(i);
+        LinkChannelEntry *entry = (*entries)->at(i - 1);
 
         ChannelInfo *lci = ChannelInfo::Find(entry->linkchan);
         if(!lci)
+        {
+          // Delete stale link
+          delete (*entries)->at(i - 1);
           continue;
+        }
 
         for(unsigned j = lci->GetAccessCount(); j > 0; j--)
         {
