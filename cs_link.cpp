@@ -141,12 +141,60 @@ class CommandCSLink : public Command
 
   void DoDel(CommandSource &source, ChannelInfo *ci, const std::vector<Anope::string> &params)
   {
-    // TODO: delete using entry numbers
     Anope::string channel = params[2];
 
     LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
     if((*entries)->empty())
       source.Reply("%s linked channel list is empty.", ci->name.c_str());
+    else if(isdigit(channel[0]) && channel.find_first_not_of("1234567890,-") == Anope::string::npos)
+    {
+      class LinkDelCallback : public NumberList
+      {
+        CommandSource &source;
+        ChannelInfo *ci;
+        Command *c;
+        LinkChannelList *entries;
+        unsigned deleted;
+        Anope::string Channels;
+        bool override;
+
+      public:
+        LinkDelCallback(CommandSource &_source, ChannelInfo *_ci, Command *_c, LinkChannelList *_entries, const Anope::string &numlist) : NumberList(numlist, true), source(_source), ci(_ci), c(_c), entries(_entries), deleted(0), override(false)
+        {
+          if(!source.AccessFor(ci).HasPriv("FOUNDER") && source.HasPriv("chanserv/administration"))
+            this->override = true;
+        }
+
+        ~LinkDelCallback()
+        {
+          if(!deleted)
+            source.Reply("No matching entries on %s linked channel list.", ci->name.c_str());
+          else
+          {
+            // TODO: log
+          }
+        }
+
+        void HandleNumber(unsigned Number) anope_override
+        {
+          if(!Number || Number > (*entries)->size())
+            return;
+
+          LinkChannelEntry *entry = (*entries)->at(Number - 1);
+
+          deleted++;
+          if(!Channels.empty())
+            Channels += ", " + entry->linkchan;
+          else
+            Channels = entry->linkchan;
+
+          // TODO: might crash?
+          delete (*entries)->at(Number - 1);
+        }
+      }
+      delcallback(source, ci, this, entries, channel);
+      delcallback.Process();
+    }
     else
     {
       for(unsigned i = (*entries)->size(); i > 0; i--)
