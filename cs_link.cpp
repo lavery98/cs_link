@@ -103,12 +103,17 @@ class CommandCSLink : public Command
       return;
     }
 
+    bool override = false;
+
     // check permissions for other channel
     if(!source.HasPriv("chanserv/administration") || !source.AccessFor(lci).HasPriv("FOUNDER"))
     {
       source.Reply(ACCESS_DENIED);
       return;
     }
+
+    if((!source.AccessFor(ci).HasPriv("FOUNDER") || !source.AccessFor(lci).HasPriv("FOUNDER")) && source.HasPriv("chanserv/administration"))
+      override = true;
 
     LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
 
@@ -137,6 +142,9 @@ class CommandCSLink : public Command
     (*lentries)->insert((*lentries)->begin(), lentry);
 
     //TODO: sync access
+
+    Log(override ? LOG_OVERRIDE : LOG_COMMAND, source, this, ci) << "to add " << lci->name.c_str();
+    source.Reply("\002%s\002 added to %s linked channel list.", lci->name.c_str(), ci->name.c_str());
   }
 
   void DoDel(CommandSource &source, ChannelInfo *ci, const std::vector<Anope::string> &params)
@@ -171,7 +179,11 @@ class CommandCSLink : public Command
             source.Reply("No matching entries on %s linked channel list.", ci->name.c_str());
           else
           {
-            // TODO: log
+            Log(override ? LOG_OVERRIDE : LOG_COMMAND, source, c, ci) << "to delete " << Channels;
+            if(deleted == 1)
+              source.Reply("Deleted 1 entry from %s linked channel list.", ci->name.c_str());
+            else
+              source.Reply("Deleted %d entries from %s linked channel list.", deleted, ci->name.c_str());
           }
         }
 
@@ -202,6 +214,8 @@ class CommandCSLink : public Command
         if(channel.equals_ci((*entries)->at(i - 1)->linkchan))
         {
           source.Reply("\002%s\002 deleted from %s linked channel list.", channel.c_str(), ci->name.c_str());
+          bool override = !source.AccessFor(ci).HasPriv("FOUNDER") && source.HasPriv("chanserv/administration");
+          Log(override ? LOG_OVERRIDE : LOG_COMMAND, source, this, ci) << "to delete " << channel.c_str();
 
           ChannelInfo *lci = ChannelInfo::Find(channel);
           if(lci != NULL)
@@ -233,6 +247,8 @@ class CommandCSLink : public Command
 
   void DoList(CommandSource &source, ChannelInfo *ci, const std::vector<Anope::string> &params)
   {
+    // TODO: list by entries
+
     LinkChannelList *entries = ci->Require<LinkChannelList>("linkchannellist");
 
     if((*entries)->empty())
@@ -510,6 +526,8 @@ public:
 
             if(lentry->linkchan.equals_ci(entry->chan))
             {
+              Log(LOG_DEBUG) << ci->name.c_str() << " is being deleted so removing link to " << lentry->chan.c_str();
+
               delete (*lentries)->at(j - 1);
               break;
             }
